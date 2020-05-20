@@ -1,4 +1,6 @@
 let circles = []
+let holdShape = null
+let holding = false
 
 function getCursorPosition(canvas, event) {
 	const rect = canvas.getBoundingClientRect()
@@ -10,26 +12,49 @@ function getCursorPosition(canvas, event) {
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
 
+canvas.addEventListener('mousedown', function (e) {
+  const [x, y] = getCursorPosition(canvas, e)
+  const color = `rgb(
+    ${Math.floor(Math.random() * 255)},
+    ${Math.floor(Math.random() * 255)},
+    ${Math.floor(Math.random() * 255)}
+  )`
+  holdShape = {x: x, y: y, color: color}
+  holding = true
+})
+
 canvas.addEventListener('mousemove', function (e) {
+  // display coordinate info
 	const [x, y] = getCursorPosition(canvas, e)
 	document.getElementById('info').innerHTML = `x: ${x}, y: ${y}`
+
+  // update position of the held shape
+  if (holding) {
+    holdShape = Object.assign(holdShape, {x: x, y: y})
+  }
 })
 
-canvas.addEventListener('mousedown', function (e) {
-	const [x, y] = getCursorPosition(canvas, e)
-	const color = `rgb(
-		${Math.floor(Math.random() * 255)},
-		${Math.floor(Math.random() * 255)},
-		${Math.floor(Math.random() * 255)}
-	)`
-	circles.push({x: x, y: y, color: color})
+canvas.addEventListener('mouseup', function (e) {
+  const [x, y] = getCursorPosition(canvas, e)
+  if (holding) {
+    holdShape = Object.assign(holdShape, {x: x, y: y})
+    circles.push(holdShape)
+    holdShape = null
+    holding = false
+  }
 })
 
+// this function is run 60 times a second, and right after the screen is cleared
 function draw() {
 	for (let circle of circles) {
 		const { x, y, color } = circle
 		drawCircle(x, y, color)
 	}
+
+  if (holding) {
+    const { x, y, color } = holdShape
+    drawCircle(x, y, color)
+  }
 }
 
 function drawCircle(x, y, color) {
