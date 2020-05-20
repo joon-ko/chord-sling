@@ -1,11 +1,61 @@
-let circles = []
+// bubbles that will be drawn every frame
+let bubbles = []
+
 let holdShape = null
+let holdLine = null
 let holding = false
+
+// distance in pixels before a line is drawn between bubbles
+let threshold = 200
+
+class Bubble {
+  constructor(pos, vel, color) {
+    this.pos = pos
+    this.vel = vel
+    this.color = color
+    this.r = 20
+    this._checkCollision()
+  }
+
+  onUpdate() {
+    this.pos[0] += this.vel[0]
+    this.pos[1] += this.vel[1]
+
+    this._checkCollision()
+  }
+
+  _checkCollision() {
+    // right wall
+    if (this.pos[0] + this.r >= canvas.width) {
+      this.pos[0] = canvas.width - this.r
+      this.vel[0] *= -1
+    }
+    // left wall
+    if (this.pos[0] - this.r <= 0) {
+      this.pos[0] = this.r
+      this.vel[0] *= -1
+    }
+    // top wall
+    if (this.pos[1] + this.r >= canvas.height) {
+      this.pos[1] = canvas.height - this.r
+      this.vel[1] *= -1
+    }
+    // bottom wall
+    if (this.pos[1] - this.r <= 0) {
+      this.pos[1] = this.r
+      this.vel[1] *= -1
+    }
+  }
+
+  render() {
+    drawBubble(...this.pos, this.color, this.r)
+  }
+}
 
 function getCursorPosition(canvas, event) {
 	const rect = canvas.getBoundingClientRect()
-	const x = event.clientX - rect.left - 1
-	const y = event.clientY - rect.top - 1
+	const x = event.clientX - rect.left
+	const y = event.clientY - rect.top
 	return [x, y]
 }
 
@@ -20,48 +70,69 @@ canvas.addEventListener('mousedown', function (e) {
     ${Math.floor(Math.random() * 255)}
   )`
   holdShape = {x: x, y: y, color: color}
+  holdLine = {start: [x, y], end: [x, y], color: color}
   holding = true
 })
 
 canvas.addEventListener('mousemove', function (e) {
-  // display coordinate info
-	const [x, y] = getCursorPosition(canvas, e)
-	document.getElementById('info').innerHTML = `x: ${x}, y: ${y}`
-
   // update position of the held shape
+  const [x, y] = getCursorPosition(canvas, e)
   if (holding) {
     holdShape = Object.assign(holdShape, {x: x, y: y})
+    holdLine = Object.assign(holdLine, {end: [x, y]})
   }
 })
 
 canvas.addEventListener('mouseup', function (e) {
   const [x, y] = getCursorPosition(canvas, e)
   if (holding) {
-    holdShape = Object.assign(holdShape, {x: x, y: y})
-    circles.push(holdShape)
+    // calculate velocity
+    let vx = Math.round(((holdLine.start[0] - x) / 60) * 100) / 100
+    let vy = Math.round(((holdLine.start[1] - y) / 60) * 100) / 100
+
+    let bubble = new Bubble([x, y], [vx, vy], holdShape.color)
+    bubbles.push(bubble)
     holdShape = null
+    holdLine = null
     holding = false
   }
 })
 
-// this function is run 60 times a second, and right after the screen is cleared
+document.addEventListener('keydown', function (e) {
+  if (e.keyCode === 8 && !holding) {
+    bubbles = [] // clear screen
+  }
+})
+
+// this function is run 60 times a second, right after the screen is cleared
 function draw() {
-	for (let circle of circles) {
-		const { x, y, color } = circle
-		drawCircle(x, y, color)
+	for (let bubble of bubbles) {
+		bubble.onUpdate()
+    bubble.render()
 	}
 
   if (holding) {
-    const { x, y, color } = holdShape
-    drawCircle(x, y, color)
+    let { x, y, color } = holdShape
+    drawBubble(x, y, color, 20)
+    drawLine(holdLine)
   }
 }
 
-function drawCircle(x, y, color) {
+function drawBubble(x, y, color, radius) {
+  ctx.lineWidth = 1
 	ctx.beginPath()
-	ctx.arc(x, y, 10, 0, 2*Math.PI, true)
+	ctx.arc(x, y, radius, 0, 2*Math.PI, true)
 	ctx.fillStyle = color
 	ctx.fill()
+}
+
+function drawLine(line) {
+  ctx.lineWidth = 5
+  ctx.beginPath()
+  ctx.moveTo(...holdLine.start)
+  ctx.lineTo(...holdLine.end)
+  ctx.strokeStyle = line.color
+  ctx.stroke()
 }
 
 let frame = 0
