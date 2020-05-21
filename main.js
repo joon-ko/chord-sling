@@ -13,8 +13,23 @@ const ctx = canvas.getContext('2d')
 
 // set up audio
 let playing = false
-const audioCtx = new AudioContext()
-let frequency = 440
+let started = false
+let audioCtx = null // initialized on first mousedown
+let frequency = 261.63
+let pitch = 'C4'
+
+const keyCodeToFreqPitch = new Map([
+  [49, [261.63, 'C4']],
+  [50, [293.67, 'D4']],
+  [51, [329.63, 'E4']],
+  [52, [349.23, 'F4']],
+  [53, [392, 'G4']],
+  [54, [440, 'A4']],
+  [55, [493.88, 'B4']],
+  [56, [523.25, 'C5']],
+])
+
+const soundMatrix = new Map()
 
 class Bubble {
   constructor(pos, vel, color, freq) {
@@ -23,15 +38,7 @@ class Bubble {
     this.color = color
     this.r = 20
 
-    this.sineNode = new OscillatorNode(audioCtx, {
-      type: 'sine',
-      frequency: freq
-    })
-    this.gainNode = audioCtx.createGain()
-    this.sineNode.connect(this.gainNode)
-    this.gainNode.connect(audioCtx.destination)
-    this.gainNode.gain.value = 0
-    this.sineNode.start()
+    this.freq = freq
   }
 
   onUpdate() {
@@ -77,6 +84,12 @@ function getCursorPosition(canvas, event) {
 }
 
 canvas.addEventListener('mousedown', function (e) {
+  // start AudioContext if not done yet
+  if (!started) {
+    audioCtx = new AudioContext()
+    started = true
+  }
+
   const [x, y] = getCursorPosition(canvas, e)
   const color = `rgb(
     ${Math.floor(Math.random() * 255)},
@@ -115,30 +128,32 @@ canvas.addEventListener('mouseup', function (e) {
 document.addEventListener('keydown', function (e) {
   // backspace
   if (e.keyCode === 8 && !holding) {
-    for (let bubble of bubbles) {
-      bubble.sineNode.stop()
-    }
     bubbles = [] // clear screen
+    soundMatrix.forEach(soundObject => {
+      soundObject.soundNode.stop()
+    })
+    soundMatrix.clear()
   }
-  // '1' and '2' keys -- A5, E5
-  if (e.keyCode === 49) frequency = 440
-  if (e.keyCode === 50) frequency = 659.255
+  // '1' thru '8' keys -- C4 thru C5
+  if (49 <= e.keyCode && e.keyCode <= 56) {
+    [frequency, pitch] = keyCodeToFreqPitch.get(e.keyCode)
+  }
 })
 
 // this function is run 60 times a second, right after the screen is cleared
 function draw() {
+  let lineCount = 0
+  let activePairs = []
   // draw lines between bubbles that are close
   for (let i=0; i<bubbles.length; i++) {
     // j=i+1 here, so no pairs are repeated
     for (let j=i+1; j<bubbles.length; j++) {
       let distance = calcDistance(bubbles[i], bubbles[j])
       if (distance <= threshold) {
-        // draw line more transparent if bubbles are father away
-        ctx.globalAlpha = 1 - (distance / 200)
-
-        // increase volume if bubbles are closer together
-        bubbles[i].gainNode.gain.value = (1 - (distance / 200))
-        bubbles[j].gainNode.gain.value = (1 - (distance / 200))
+        const strength = 1 - (distance / threshold)
+        ctx.globalAlpha = strength
+        activePairs.push([i, j, strength])
+        activePairs.push([j, i, strength])
 
         drawLine({
           start: bubbles[i].pos,
@@ -154,8 +169,15 @@ function draw() {
             )`
           })()
         })
+
+        lineCount++
       }
     }
+  }
+
+  for (item of activePairs) {
+    let [i, j, strength] = item
+    changeGain(i, j, strength / 25) // 25 is a sufficient damping factor that doesn't clip
   }
 
   // reset to full opacity
@@ -191,6 +213,30 @@ function drawLine(line) {
   ctx.stroke()
 }
 
+// change the gain of bubbles[i]'s note w.r.t. its distance from bubbles[j].
+function changeGain(i, j, newGain) {
+  console.log(newGain)
+  const key = `${i} ${j}`
+  if (!soundMatrix.has(key)) {
+    let soundNode = new OscillatorNode(audioCtx, {
+      type: 'sine',
+      frequency: bubbles[i].freq
+    })
+    let gainNode = audioCtx.createGain()
+    gainNode.gain.value = 0
+    soundNode.connect(gainNode)
+    gainNode.connect(audioCtx.destination)
+    soundNode.start()
+
+    soundMatrix.set(key, {
+      soundNode: soundNode,
+      gainNode: gainNode,
+    })
+  }
+  soundObject = soundMatrix.get(key)
+  soundObject.gainNode.gain.value = newGain
+}
+
 // calculate the distance in pixels between two bubbles
 const calcDistance = (b1, b2) => {
   return Math.pow(Math.pow(b2.pos[0] - b1.pos[0], 2) + Math.pow(b2.pos[1] - b1.pos[1], 2), 0.5)
@@ -201,7 +247,7 @@ window.setInterval(() => {
 	frame += 1
 	document.getElementById('frame').innerHTML = `
 		frame: ${frame}, seconds: ${Math.round((frame/60) * 100) / 100}<br>
-    frequency: ${frequency}
+    frequency: ${frequency} Hz, pitch: ${pitch}
 	`
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
