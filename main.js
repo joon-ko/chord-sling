@@ -14,15 +14,24 @@ const ctx = canvas.getContext('2d')
 // set up audio
 let playing = false
 const audioCtx = new AudioContext()
-let sineNode = null
+let frequency = 440
 
 class Bubble {
-  constructor(pos, vel, color) {
+  constructor(pos, vel, color, freq) {
     this.pos = pos
     this.vel = vel
     this.color = color
     this.r = 20
-    this._checkCollision()
+
+    this.sineNode = new OscillatorNode(audioCtx, {
+      type: 'sine',
+      frequency: freq
+    })
+    this.gainNode = audioCtx.createGain()
+    this.sineNode.connect(this.gainNode)
+    this.gainNode.connect(audioCtx.destination)
+    this.gainNode.gain.value = 0
+    this.sineNode.start()
   }
 
   onUpdate() {
@@ -95,7 +104,7 @@ canvas.addEventListener('mouseup', function (e) {
     let vx = Math.round(((holdLine.start[0] - x) / 60) * 100) / 100
     let vy = Math.round(((holdLine.start[1] - y) / 60) * 100) / 100
 
-    let bubble = new Bubble([x, y], [vx, vy], holdShape.color)
+    let bubble = new Bubble([x, y], [vx, vy], holdShape.color, frequency)
     bubbles.push(bubble)
     holdShape = null
     holdLine = null
@@ -106,29 +115,18 @@ canvas.addEventListener('mouseup', function (e) {
 document.addEventListener('keydown', function (e) {
   // backspace
   if (e.keyCode === 8 && !holding) {
+    for (let bubble of bubbles) {
+      bubble.sineNode.stop()
+    }
     bubbles = [] // clear screen
   }
-  // spacebar
-  if (e.keyCode === 32) {
-    console.log('spacebar')
-    if (!playing) {
-      sineNode = new OscillatorNode(audioCtx, {
-        type: 'sine',
-        frequency: 440
-      })
-      sineNode.connect(audioCtx.destination)
-      sineNode.start()
-      playing = true
-    } else {
-      sineNode.stop()
-      playing = false
-    }
-  }
+  // '1' and '2' keys -- A5, E5
+  if (e.keyCode === 49) frequency = 440
+  if (e.keyCode === 50) frequency = 659.255
 })
 
 // this function is run 60 times a second, right after the screen is cleared
 function draw() {
-
   // draw lines between bubbles that are close
   for (let i=0; i<bubbles.length; i++) {
     // j=i+1 here, so no pairs are repeated
@@ -137,6 +135,10 @@ function draw() {
       if (distance <= threshold) {
         // draw line more transparent if bubbles are father away
         ctx.globalAlpha = 1 - (distance / 200)
+
+        // increase volume if bubbles are closer together
+        bubbles[i].gainNode.gain.value = (1 - (distance / 200))
+        bubbles[j].gainNode.gain.value = (1 - (distance / 200))
 
         drawLine({
           start: bubbles[i].pos,
@@ -172,7 +174,6 @@ function draw() {
   }
 }
 
-
 function drawBubble(x, y, color, radius) {
   ctx.lineWidth = 1
 	ctx.beginPath()
@@ -199,7 +200,8 @@ let frame = 0
 window.setInterval(() => {
 	frame += 1
 	document.getElementById('frame').innerHTML = `
-		frame: ${frame}, seconds: ${Math.round((frame/60) * 100) / 100}
+		frame: ${frame}, seconds: ${Math.round((frame/60) * 100) / 100}<br>
+    frequency: ${frequency}
 	`
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
