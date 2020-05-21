@@ -113,6 +113,9 @@ function draw() {
     for (let j=i+1; j<bubbles.length; j++) {
       let distance = calcDistance(bubbles[i], bubbles[j])
       if (distance <= threshold) {
+        // draw line more transparent if bubbles are father away
+        ctx.globalAlpha = 1 - (distance / 200)
+
         drawLine({
           start: bubbles[i].pos,
           end: bubbles[j].pos,
@@ -130,6 +133,9 @@ function draw() {
       }
     }
   }
+
+  // reset to full opacity
+  ctx.globalAlpha = 1.0
 
   // draw all bubbles
   for (let bubble of bubbles) {
