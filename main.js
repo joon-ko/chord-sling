@@ -8,6 +8,14 @@ let holding = false
 // distance in pixels before a line is drawn between bubbles
 let threshold = 200
 
+const canvas = document.getElementById('canvas')
+const ctx = canvas.getContext('2d')
+
+// set up audio
+let playing = false
+const audioCtx = new AudioContext()
+let sineNode = null
+
 class Bubble {
   constructor(pos, vel, color) {
     this.pos = pos
@@ -59,9 +67,6 @@ function getCursorPosition(canvas, event) {
 	return [x, y]
 }
 
-const canvas = document.getElementById('canvas')
-const ctx = canvas.getContext('2d')
-
 canvas.addEventListener('mousedown', function (e) {
   const [x, y] = getCursorPosition(canvas, e)
   const color = `rgb(
@@ -99,8 +104,25 @@ canvas.addEventListener('mouseup', function (e) {
 })
 
 document.addEventListener('keydown', function (e) {
+  // backspace
   if (e.keyCode === 8 && !holding) {
     bubbles = [] // clear screen
+  }
+  // spacebar
+  if (e.keyCode === 32) {
+    console.log('spacebar')
+    if (!playing) {
+      sineNode = new OscillatorNode(audioCtx, {
+        type: 'sine',
+        frequency: 440
+      })
+      sineNode.connect(audioCtx.destination)
+      sineNode.start()
+      playing = true
+    } else {
+      sineNode.stop()
+      playing = false
+    }
   }
 })
 
