@@ -106,10 +106,36 @@ document.addEventListener('keydown', function (e) {
 
 // this function is run 60 times a second, right after the screen is cleared
 function draw() {
-	for (let bubble of bubbles) {
-		bubble.onUpdate()
+
+  // draw lines between bubbles that are close
+  for (let i=0; i<bubbles.length; i++) {
+    // j=i+1 here, so no pairs are repeated
+    for (let j=i+1; j<bubbles.length; j++) {
+      let distance = calcDistance(bubbles[i], bubbles[j])
+      if (distance <= threshold) {
+        drawLine({
+          start: bubbles[i].pos,
+          end: bubbles[j].pos,
+          color: (() => {
+            // parse out 'rgb(a,b,c)' into [a, b, c]
+            const rgb1 = bubbles[i].color.replace(/[^\d,]/g, '').split(',').map(Number)
+            const rgb2 = bubbles[j].color.replace(/[^\d,]/g, '').split(',').map(Number)
+            return `rgb(
+              ${(rgb1[0] + rgb2[0]) / 2},
+              ${(rgb1[1] + rgb2[1]) / 2},
+              ${(rgb1[2] + rgb2[2]) / 2}
+            )`
+          })()
+        })
+      }
+    }
+  }
+
+  // draw all bubbles
+  for (let bubble of bubbles) {
+    bubble.onUpdate()
     bubble.render()
-	}
+  }
 
   if (holding) {
     let { x, y, color } = holdShape
@@ -117,6 +143,7 @@ function draw() {
     drawLine(holdLine)
   }
 }
+
 
 function drawBubble(x, y, color, radius) {
   ctx.lineWidth = 1
@@ -129,10 +156,15 @@ function drawBubble(x, y, color, radius) {
 function drawLine(line) {
   ctx.lineWidth = 5
   ctx.beginPath()
-  ctx.moveTo(...holdLine.start)
-  ctx.lineTo(...holdLine.end)
+  ctx.moveTo(...line.start)
+  ctx.lineTo(...line.end)
   ctx.strokeStyle = line.color
   ctx.stroke()
+}
+
+// calculate the distance in pixels between two bubbles
+const calcDistance = (b1, b2) => {
+  return Math.pow(Math.pow(b2.pos[0] - b1.pos[0], 2) + Math.pow(b2.pos[1] - b1.pos[1], 2), 0.5)
 }
 
 let frame = 0
