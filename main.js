@@ -93,7 +93,10 @@ class Bubble {
   }
 
   render() {
-    drawBubble(...this.pos, this.color, this.r)
+    if (this.type === 'sine') drawBubble(...this.pos, this.color, this.r)
+    else if (this.type === 'square') drawSquare(...this.pos, this.color, this.r)
+    else if (this.type === 'sawtooth') drawDiamond(...this.pos, this.color, this.r)
+    else if (this.type === 'triangle') drawTriangle(...this.pos, this.color, this.r)
   }
 }
 
@@ -264,7 +267,10 @@ function draw() {
 
   if (holding) {
     let { x, y, color } = holdShape
-    drawBubble(x, y, color, 20)
+    if (type === 'sine') drawBubble(x, y, color, 20)
+    else if (type === 'square') drawSquare(x, y, color, 20)
+    else if (type === 'sawtooth') drawDiamond(x, y, color, 20)
+    else if (type === 'triangle') drawTriangle(x, y, color, 20)
     drawLine(holdLine)
   }
 }
@@ -273,6 +279,42 @@ function drawBubble(x, y, color, radius) {
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.arc(x, y, radius, 0, 2*Math.PI, true)
+  ctx.fillStyle = color
+  ctx.fill()
+}
+
+function drawSquare(x, y, color, radius) {
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(x - radius, y - radius)
+  ctx.lineTo(x - radius, y + radius)
+  ctx.lineTo(x + radius, y + radius)
+  ctx.lineTo(x + radius, y - radius)
+  ctx.lineTo(x - radius, y - radius)
+  ctx.fillStyle = color
+  ctx.fill()
+}
+
+function drawDiamond(x, y, color, radius) {
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(x, y + radius)
+  ctx.lineTo(x + radius, y)
+  ctx.lineTo(x, y - radius)
+  ctx.lineTo(x - radius, y)
+  ctx.lineTo(x, y + radius)
+  ctx.fillStyle = color
+  ctx.fill()
+}
+
+function drawTriangle(x, y, color, radius) {
+  const s2 = ((2 * radius)/Math.sqrt(3))
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(x, y - radius)
+  ctx.lineTo(x + s2, y + radius)
+  ctx.lineTo(x - s2, y + radius)
+  ctx.lineTo(x, y - radius)
   ctx.fillStyle = color
   ctx.fill()
 }
@@ -339,8 +381,8 @@ window.setInterval(() => {
   frame += 1
   document.getElementById('info').innerHTML = `
     wave type: ${type}<br>
-    root pitch: ${rootPitchName}, root freq: ${rootFreq} Hz<br>
-    pitch: ${pitchName}, frequency: ${frequency} Hz<br>
+    root pitch: ${rootPitchName}<br>
+    pitch: ${pitchName}<br>
     re-drag mode: ${dragMode ? 'on' : 'off'}
   `
 
