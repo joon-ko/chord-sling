@@ -49,10 +49,6 @@ svg {
   visibility: visible;
 }
 
-.key:hover {
-  fill: #90ee90;
-}
-
 .white {
   fill: white;
   stroke: black;
@@ -76,28 +72,29 @@ svg {
    -->
 
   <!--  White keys   -->
-  <rect class="white key" id="0" x="0" y="0" width="23" height="120" fill-opacity="0.4"/>
-  <rect class="white key" id="2" x="23" y="0" width="23" height="120" fill-opacity="0.4"/>
-  <rect class="white key" id="4" x="46" y="0" width="23" height="120" fill-opacity="0.4"/>
-  <rect class="white key" id="5" x="69" y="0" width="23" height="120" fill-opacity="0.4"/>
-  <rect class="white key" id="7" x="92" y="0" width="23" height="120" fill-opacity="0.4"/>
-  <rect class="white key" id="9" x="115" y="0" width="23" height="120" fill-opacity="0.4"/>
-  <rect class="white key" id="11" x="138" y="0" width="23" height="120" fill-opacity="0.4"/>
-  <rect class="white key" id="12" x="161" y="0" width="23" height="120" fill-opacity="0.4"/>
+  <rect class="white key" id="key-0" x="0" y="0" width="23" height="120" fill-opacity="0.4"/>
+  <rect class="white key" id="key-2" x="23" y="0" width="23" height="120" fill-opacity="0.4"/>
+  <rect class="white key" id="key-4" x="46" y="0" width="23" height="120" fill-opacity="0.4"/>
+  <rect class="white key" id="key-5" x="69" y="0" width="23" height="120" fill-opacity="0.4"/>
+  <rect class="white key" id="key-7" x="92" y="0" width="23" height="120" fill-opacity="0.4"/>
+  <rect class="white key" id="key-9" x="115" y="0" width="23" height="120" fill-opacity="0.4"/>
+  <rect class="white key" id="key-11" x="138" y="0" width="23" height="120" fill-opacity="0.4"/>
+  <rect class="white key" id="key-12" x="161" y="0" width="23" height="120" fill-opacity="0.4"/>
 
   <!--  Black keys (overlap with the white keys)  -->
-  <rect class="black key" id="1" x="14.33333" y="0" width="13" height="80"/>
-  <rect class="black key" id="3" x="41.66666" y="0" width="13" height="80"/>
-  <rect class="black key" id="6" x="82.25" y="0" width="13" height="80"/>
-  <rect class="black key" id="8" x="108.25" y="0" width="13" height="80"/>
-  <rect class="black key" id="10" x="134.75" y="0" width="13" height="80"/>
+  <rect class="black key" id="key-1" x="14.33333" y="0" width="13" height="80"/>
+  <rect class="black key" id="key-3" x="41.66666" y="0" width="13" height="80"/>
+  <rect class="black key" id="key-6" x="82.25" y="0" width="13" height="80"/>
+  <rect class="black key" id="key-8" x="108.25" y="0" width="13" height="80"/>
+  <rect class="black key" id="key-10" x="134.75" y="0" width="13" height="80"/>
 </svg>
 <div id="controls-text">controls</div>
 <div id="controls">
   <div>click and drag</div>
-  <div>pitch select (white keys): 1-8</div>
-  <div>shift octave down/up: d/f</div>
-  <div>wave type select: qwer</div>
+  <div>pitch select (white keys): qwertyui</div>
+  <div>pitch select (black keys): 23567</div>
+  <div>shift octave down/up: c/v</div>
+  <div>wave type select: asdf</div>
   <div>re-drag bubble: hold space</div>
   <div>clear screen: backspace</div>
 </div>

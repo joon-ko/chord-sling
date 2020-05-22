@@ -25,14 +25,37 @@ function resizeCanvas() {
 }
 
 const svg = document.getElementById('svg')
-svg.addEventListener('click', select)
+svg.addEventListener('click', selectKey)
 
 // when a piano key is clicked, select the pitch
-function select(e) {
-  const delta = Number(e.target.id);
+function selectKey(e) {
+  old_delta = delta
+  delta = Number(e.target.id.split('-')[1]) // for 'key-n', extract n
   pitch = rootPitch + delta;
-  [pitchName, frequency] = pitchMap.get(pitch);
+  [pitchName, frequency] = pitchMap.get(pitch)
+  const black = [1, 3, 6, 8, 10].includes(old_delta)
+  if (old_delta !== delta) {
+    document.getElementById(`key-${old_delta}`).style.fill = black ? 'black' : 'white'
+    document.getElementById(`key-${delta}`).style.fill = '#7aeb7a'
+  }
 }
+
+const rects = document.querySelectorAll('rect')
+rects.forEach(rect => {
+  rect.addEventListener('mouseenter', (e) => {
+    const targetDelta = Number(e.target.id.split('-')[1])
+    if (targetDelta !== delta) {
+      e.target.style.fill = '#ffc0cb'
+    }
+  })
+  rect.addEventListener('mouseleave', (e) => {
+    const targetDelta = Number(e.target.id.split('-')[1])
+    if (targetDelta !== delta) {
+      const black = [1, 3, 6, 8, 10].includes(targetDelta)
+      e.target.style.fill = black ? 'black' : 'white'
+    }
+  })
+})
 
 // set up audio
 let playing = false
@@ -47,16 +70,27 @@ let rootPitchName = 'C4'
 let pitchName = 'C4'
 let rootFreq = 261.63
 let frequency = 261.63
+let delta = 0
+
+// highlight current delta
+document.getElementById(`key-${delta}`).style.fill = '#7aeb7a'
 
 const keyCodeToPitchDelta = new Map([
-  [49, 0],
-  [50, 2],
-  [51, 4],
-  [52, 5],
-  [53, 7],
-  [54, 9],
-  [55, 11],
-  [56, 12]
+  // white keys
+  [81, 0],  // q
+  [87, 2],  // w
+  [69, 4],  // e
+  [82, 5],  // r
+  [84, 7],  // t
+  [89, 9],  // y
+  [85, 11], // u
+  [73, 12], // i
+  // black keys
+  [50, 1], // 2
+  [51, 3], // 3
+  [53, 6], // 5
+  [54, 8], // 6
+  [55, 10]  // 7
 ])
 
 const soundMatrix = new Map()
@@ -186,24 +220,31 @@ document.addEventListener('keydown', function (e) {
     soundMatrix.clear()
   }
 
-  // '1' thru '8' keys -- C4 thru C5
-  if (49 <= e.keyCode && e.keyCode <= 56) {
-    pitch = rootPitch + keyCodeToPitchDelta.get(e.keyCode);
+  // qwertyui & 23567 -- white keys & black keys
+  if ([81, 87, 69, 82, 84, 89, 85, 73, 50, 51, 53, 54, 55].includes(e.keyCode)) {
+    old_delta = delta
+    delta = keyCodeToPitchDelta.get(e.keyCode)
+    pitch = rootPitch + delta;
     [pitchName, frequency] = pitchMap.get(pitch)
+    const black = [1, 3, 6, 8, 10].includes(old_delta)
+    if (old_delta !== delta) {
+      document.getElementById(`key-${old_delta}`).style.fill = black ? 'black' : 'white'
+      document.getElementById(`key-${delta}`).style.fill = '#7aeb7a'
+    }
   }
 
-  // 'q', 'w', 'e', 'r' -- sine, square, sawtooth, triangle
-  if (e.keyCode === 81) type = 'sine'
-  if (e.keyCode === 87) type = 'square'
-  if (e.keyCode === 69) type = 'sawtooth'
-  if (e.keyCode === 82) type = 'triangle'
+  // asdf -- sine, square, sawtooth, triangle
+  if (e.keyCode === 65) type = 'sine' // a
+  if (e.keyCode === 83) type = 'square' // s
+  if (e.keyCode === 68) type = 'sawtooth' // d
+  if (e.keyCode === 70) type = 'triangle' // f
 
   // spacebar -- hold for re-drag mode
   if (e.keyCode === 32) dragMode = true
 
-  // d, f -- shift keyboard by an octave down, up
-  if (e.keyCode === 68 || e.keyCode === 70) {
-    if (e.keyCode === 68) { // down
+  // c, v -- shift keyboard by an octave down, up
+  if (e.keyCode === 67 || e.keyCode === 86) {
+    if (e.keyCode === 67) { // down
       if (rootPitch > 16) { // stop shifting root past C2
         rootPitch -= 12;
         pitch -= 12;
