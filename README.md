@@ -1,6 +1,6 @@
 ### [chord-sling](https://joon-ko.github.io/chord-sling/)
 
-chord-sling is an attempt to port a pset from a class i took called **interactive music systems** into javascript.
+is a port of a creative assignment from a class i took called **interactive music systems** into the browser.
 
 it works by dragging on the screen to slingshot musical shapes around. each shape has an associated wave type, e.g. sineor square, and a pitch. when a shape gets close to another shape, it plays its associated sound with volume proportional to the distance away from the other shape. (it's best to just play around and get a feel for things intuitively!)
 
