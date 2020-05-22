@@ -1,9 +1,14 @@
 // bubbles that will be drawn every frame
 let bubbles = []
 
+// slingshot graphics
 let holdShape = null
 let holdLine = null
 let holding = false
+
+// bubble re-drag
+let dragMode = false
+let draggingBubble = null
 
 // distance in pixels before a line is drawn between bubbles
 let threshold = 200
@@ -16,6 +21,7 @@ let playing = false
 let started = false
 let audioCtx = null // initialized on first mousedown
 let frequency = 261.63
+let type = 'sine'
 let pitch = 'C4'
 
 const keyCodeToFreqPitch = new Map([
@@ -32,13 +38,14 @@ const keyCodeToFreqPitch = new Map([
 const soundMatrix = new Map()
 
 class Bubble {
-  constructor(pos, vel, color, freq) {
+  constructor(pos, vel, color, freq, type) {
     this.pos = pos
     this.vel = vel
     this.color = color
     this.r = 20
 
     this.freq = freq
+    this.type = type
   }
 
   onUpdate() {
@@ -91,14 +98,24 @@ canvas.addEventListener('mousedown', function (e) {
   }
 
   const [x, y] = getCursorPosition(canvas, e)
-  const color = `rgb(
-    ${Math.floor(Math.random() * 255)},
-    ${Math.floor(Math.random() * 255)},
-    ${Math.floor(Math.random() * 255)}
-  )`
-  holdShape = {x: x, y: y, color: color}
-  holdLine = {start: [x, y], end: [x, y], color: color}
-  holding = true
+
+  if (!dragMode) {
+    const color = `rgb(
+      ${Math.floor(Math.random() * 255)},
+      ${Math.floor(Math.random() * 255)},
+      ${Math.floor(Math.random() * 255)}
+    )`
+    holdShape = {x: x, y: y, color: color}
+    holdLine = {start: [x, y], end: [x, y], color: color}
+    holding = true
+  } else {
+    // check if mouse is over a bubble
+    let bubble = getMousedOverBubble(x, y)
+    if (bubble !== null) {
+      bubble.vel = [0, 0] // freeze bubble if it was moving
+      draggingBubble = bubble
+    }
+  }
 })
 
 canvas.addEventListener('mousemove', function (e) {
@@ -107,6 +124,9 @@ canvas.addEventListener('mousemove', function (e) {
   if (holding) {
     holdShape = Object.assign(holdShape, {x: x, y: y})
     holdLine = Object.assign(holdLine, {end: [x, y]})
+  }
+  if (draggingBubble !== null) {
+    draggingBubble.pos = [x, y]
   }
 })
 
@@ -117,27 +137,45 @@ canvas.addEventListener('mouseup', function (e) {
     let vx = Math.round(((holdLine.start[0] - x) / 60) * 100) / 100
     let vy = Math.round(((holdLine.start[1] - y) / 60) * 100) / 100
 
-    let bubble = new Bubble([x, y], [vx, vy], holdShape.color, frequency)
+    let bubble = new Bubble([x, y], [vx, vy], holdShape.color, frequency, type)
     bubbles.push(bubble)
     holdShape = null
     holdLine = null
     holding = false
   }
+  if (draggingBubble !== null) {
+    draggingBubble.pos = [x, y]
+    draggingBubble = null
+  }
 })
 
 document.addEventListener('keydown', function (e) {
-  // backspace
+  // backspace -- clear screen
   if (e.keyCode === 8 && !holding) {
-    bubbles = [] // clear screen
+    bubbles = []
     soundMatrix.forEach(soundObject => {
       soundObject.soundNode.stop()
     })
     soundMatrix.clear()
   }
+
   // '1' thru '8' keys -- C4 thru C5
   if (49 <= e.keyCode && e.keyCode <= 56) {
     [frequency, pitch] = keyCodeToFreqPitch.get(e.keyCode)
   }
+
+  // 'q', 'w', 'e', 'r' -- sine, square, sawtooth, triangle
+  if (e.keyCode === 81) type = 'sine'
+  if (e.keyCode === 87) type = 'square'
+  if (e.keyCode === 69) type = 'sawtooth'
+  if (e.keyCode === 82) type = 'triangle'
+
+  // spacebar -- hold for re-drag mode
+  if (e.keyCode === 32) dragMode = true
+})
+
+document.addEventListener('keyup', function (e) {
+  if (e.keyCode === 32) dragMode = false
 })
 
 // this function is run 60 times a second, right after the screen is cleared
@@ -171,13 +209,16 @@ function draw() {
         })
 
         lineCount++
+      } else {
+        changeGain(i, j, 0)
+        changeGain(j, i, 0)
       }
     }
   }
 
   for (item of activePairs) {
     let [i, j, strength] = item
-    changeGain(i, j, strength / 25) // 25 is a sufficient damping factor that doesn't clip
+    changeGain(i, j, strength / 25) // 25 is a sufficient damping factor that doesn't clip easily
   }
 
   // reset to full opacity
@@ -215,11 +256,10 @@ function drawLine(line) {
 
 // change the gain of bubbles[i]'s note w.r.t. its distance from bubbles[j].
 function changeGain(i, j, newGain) {
-  console.log(newGain)
   const key = `${i} ${j}`
   if (!soundMatrix.has(key)) {
     let soundNode = new OscillatorNode(audioCtx, {
-      type: 'sine',
+      type: bubbles[i].type,
       frequency: bubbles[i].freq
     })
     let gainNode = audioCtx.createGain()
@@ -237,6 +277,19 @@ function changeGain(i, j, newGain) {
   soundObject.gainNode.gain.value = newGain
 }
 
+// x, y -- current mouse position
+function getMousedOverBubble(x, y) {
+  let got = null
+  for (let bubble of bubbles) {
+    if (bubble.pos[0] - bubble.r <= x && x <= bubble.pos[0] + bubble.r &&
+        bubble.pos[1] - bubble.r <= y && y <= bubble.pos[1] + bubble.r) {
+      got = bubble
+      break
+    }
+  }
+  return got
+}
+
 // calculate the distance in pixels between two bubbles
 const calcDistance = (b1, b2) => {
   return Math.pow(Math.pow(b2.pos[0] - b1.pos[0], 2) + Math.pow(b2.pos[1] - b1.pos[1], 2), 0.5)
@@ -247,7 +300,9 @@ window.setInterval(() => {
 	frame += 1
 	document.getElementById('frame').innerHTML = `
 		frame: ${frame}, seconds: ${Math.round((frame/60) * 100) / 100}<br>
-    frequency: ${frequency} Hz, pitch: ${pitch}
+    wave type: ${type}<br>
+    pitch: ${pitch}, frequency: ${frequency} Hz<br>
+    re-drag mode: ${dragMode ? 'on' : 'off'}
 	`
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
