@@ -24,6 +24,16 @@ function resizeCanvas() {
   canvas.height = window.innerHeight
 }
 
+const svg = document.getElementById('svg')
+svg.addEventListener('click', select)
+
+// when a piano key is clicked, select the pitch
+function select(e) {
+  const delta = Number(e.target.id);
+  pitch = rootPitch + delta;
+  [pitchName, frequency] = pitchMap.get(pitch);
+}
+
 // set up audio
 let playing = false
 let started = false
@@ -191,17 +201,17 @@ document.addEventListener('keydown', function (e) {
   // spacebar -- hold for re-drag mode
   if (e.keyCode === 32) dragMode = true
 
-  // left, right -- shift the root pitch by a semitone
-  if (e.keyCode === 37 || e.keyCode === 39) {
-    if (e.keyCode === 37) { // left
+  // d, f -- shift keyboard by an octave down, up
+  if (e.keyCode === 68 || e.keyCode === 70) {
+    if (e.keyCode === 68) { // down
       if (rootPitch > 16) { // stop shifting root past C2
-        rootPitch--;
-        pitch--;
+        rootPitch -= 12;
+        pitch -= 12;
       }
-    } else { // right
+    } else { // up
       if (rootPitch < 64) { // stop shifting root past C6
-        rootPitch++;
-        pitch++;
+        rootPitch += 12;
+        pitch += 12;
       }
     }
     [rootPitchName, rootFreq] = pitchMap.get(rootPitch);
