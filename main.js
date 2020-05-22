@@ -288,7 +288,7 @@ function changeGain(i, j, newGain) {
   soundObject.gainNode.gain.linearRampToValueAtTime(newGain, audioCtx.currentTime + (1/60))
 
   // panning is from -1 to 1, so make a range from 0 to 2 and subtract 1
-  const panValue = (bubbles[i].pos[0] / 250) - 1
+  const panValue = (bubbles[i].pos[0] / (canvas.width / 2)) - 1
   soundObject.pannerNode.pan.linearRampToValueAtTime(panValue, audioCtx.currentTime + (1/60))
 }
 
