@@ -28,19 +28,25 @@ function resizeCanvas() {
 let playing = false
 let started = false
 let audioCtx = null // initialized on first mousedown
-let frequency = 261.63
-let type = 'sine'
-let pitch = 'C4'
 
-const keyCodeToFreqPitch = new Map([
-  [49, [261.63, 'C4']],
-  [50, [293.67, 'D4']],
-  [51, [329.63, 'E4']],
-  [52, [349.23, 'F4']],
-  [53, [392, 'G4']],
-  [54, [440, 'A4']],
-  [55, [493.88, 'B4']],
-  [56, [523.25, 'C5']],
+// starting parameters
+let type = 'sine'
+let rootPitch = 40
+let pitch = 40
+let rootPitchName = 'C4'
+let pitchName = 'C4'
+let rootFreq = 261.63
+let frequency = 261.63
+
+const keyCodeToPitchDelta = new Map([
+  [49, 0],
+  [50, 2],
+  [51, 4],
+  [52, 5],
+  [53, 7],
+  [54, 9],
+  [55, 11],
+  [56, 12]
 ])
 
 const soundMatrix = new Map()
@@ -169,7 +175,8 @@ document.addEventListener('keydown', function (e) {
 
   // '1' thru '8' keys -- C4 thru C5
   if (49 <= e.keyCode && e.keyCode <= 56) {
-    [frequency, pitch] = keyCodeToFreqPitch.get(e.keyCode)
+    pitch = rootPitch + keyCodeToPitchDelta.get(e.keyCode);
+    [pitchName, frequency] = pitchMap.get(pitch)
   }
 
   // 'q', 'w', 'e', 'r' -- sine, square, sawtooth, triangle
@@ -180,6 +187,23 @@ document.addEventListener('keydown', function (e) {
 
   // spacebar -- hold for re-drag mode
   if (e.keyCode === 32) dragMode = true
+
+  // left, right -- shift the root pitch by a semitone
+  if (e.keyCode === 37 || e.keyCode === 39) {
+    if (e.keyCode === 37) { // left
+      if (rootPitch > 16) { // stop shifting root past C2
+        rootPitch--;
+        pitch--;
+      }
+    } else { // right
+      if (rootPitch < 64) { // stop shifting root past C6
+        rootPitch++;
+        pitch++;
+      }
+    }
+    [rootPitchName, rootFreq] = pitchMap.get(rootPitch);
+    [pitchName, frequency] = pitchMap.get(pitch);
+  }
 })
 
 document.addEventListener('keyup', function (e) {
@@ -314,9 +338,9 @@ let frame = 0
 window.setInterval(() => {
   frame += 1
   document.getElementById('info').innerHTML = `
-    frame: ${frame}, seconds: ${Math.round((frame/60) * 100) / 100}<br>
     wave type: ${type}<br>
-    pitch: ${pitch}, frequency: ${frequency} Hz<br>
+    root pitch: ${rootPitchName}, root freq: ${rootFreq} Hz<br>
+    pitch: ${pitchName}, frequency: ${frequency} Hz<br>
     re-drag mode: ${dragMode ? 'on' : 'off'}
   `
 
