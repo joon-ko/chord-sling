@@ -15,6 +15,14 @@ let threshold = 200
 
 const canvas = document.getElementById('canvas')
 const ctx = canvas.getContext('2d')
+resizeCanvas()
+
+window.addEventListener('resize', resizeCanvas)
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth
+  canvas.height = window.innerHeight
+}
 
 // set up audio
 let playing = false
@@ -84,10 +92,10 @@ class Bubble {
 }
 
 function getCursorPosition(canvas, event) {
-	const rect = canvas.getBoundingClientRect()
-	const x = event.clientX - rect.left
-	const y = event.clientY - rect.top
-	return [x, y]
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+  return [x, y]
 }
 
 canvas.addEventListener('mousedown', function (e) {
@@ -239,10 +247,10 @@ function draw() {
 
 function drawBubble(x, y, color, radius) {
   ctx.lineWidth = 1
-	ctx.beginPath()
-	ctx.arc(x, y, radius, 0, 2*Math.PI, true)
-	ctx.fillStyle = color
-	ctx.fill()
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, 2*Math.PI, true)
+  ctx.fillStyle = color
+  ctx.fill()
 }
 
 function drawLine(line) {
@@ -263,18 +271,25 @@ function changeGain(i, j, newGain) {
       frequency: bubbles[i].freq
     })
     let gainNode = audioCtx.createGain()
+    let pannerNode = new StereoPannerNode(audioCtx)
     gainNode.gain.value = 0
     soundNode.connect(gainNode)
-    gainNode.connect(audioCtx.destination)
+    gainNode.connect(pannerNode)
+    pannerNode.connect(audioCtx.destination)
     soundNode.start()
 
     soundMatrix.set(key, {
       soundNode: soundNode,
       gainNode: gainNode,
+      pannerNode: pannerNode
     })
   }
   soundObject = soundMatrix.get(key)
-  soundObject.gainNode.gain.value = newGain
+  soundObject.gainNode.gain.linearRampToValueAtTime(newGain, audioCtx.currentTime + (1/60))
+
+  // panning is from -1 to 1, so make a range from 0 to 2 and subtract 1
+  const panValue = (bubbles[i].pos[0] / 250) - 1
+  soundObject.pannerNode.pan.linearRampToValueAtTime(panValue, audioCtx.currentTime + (1/60))
 }
 
 // x, y -- current mouse position
@@ -297,14 +312,14 @@ const calcDistance = (b1, b2) => {
 
 let frame = 0
 window.setInterval(() => {
-	frame += 1
-	document.getElementById('frame').innerHTML = `
-		frame: ${frame}, seconds: ${Math.round((frame/60) * 100) / 100}<br>
+  frame += 1
+  document.getElementById('info').innerHTML = `
+    frame: ${frame}, seconds: ${Math.round((frame/60) * 100) / 100}<br>
     wave type: ${type}<br>
     pitch: ${pitch}, frequency: ${frequency} Hz<br>
     re-drag mode: ${dragMode ? 'on' : 'off'}
-	`
+  `
 
-	ctx.clearRect(0, 0, canvas.width, canvas.height)
-	draw()
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  draw()
 }, 1000/60)
