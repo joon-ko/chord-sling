@@ -432,7 +432,6 @@ window.setInterval(() => {
   frame += 1
   document.getElementById('info').innerHTML = `
     wave type: ${type}<br>
-    root pitch: ${rootPitchName}<br>
     pitch: ${pitchName}<br>
     re-drag mode: ${dragMode ? 'on' : 'off'}
   `
