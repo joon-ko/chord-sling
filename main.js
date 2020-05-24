@@ -242,6 +242,20 @@ document.addEventListener('keydown', function (e) {
   // spacebar -- hold for re-drag mode
   if (e.keyCode === 32) dragMode = true
 
+  // z, x -- distance threshold down, up
+  if (e.keyCode === 88 || e.keyCode === 90) {
+    if (e.keyCode === 90) { // down
+      if (threshold > 50) {
+        threshold -= 50;
+      }
+    }
+    else { // up
+      if (threshold < 500) {
+        threshold += 50;
+      }
+    }
+  }
+
   // c, v -- shift keyboard by an octave down, up
   if (e.keyCode === 67 || e.keyCode === 86) {
     if (e.keyCode === 67) { // down
@@ -433,6 +447,7 @@ window.setInterval(() => {
   document.getElementById('info').innerHTML = `
     wave type: ${type}<br>
     pitch: ${pitchName}<br>
+    threshold: ${threshold}px<br>
     re-drag mode: ${dragMode ? 'on' : 'off'}
   `
 
